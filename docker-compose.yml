@@ -1,0 +1,65 @@
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+    environment:
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+      JWT_SECRET: ${JWT_SECRET:-smart-campus-change-this-secret}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    depends_on:
+      - mongo
+    expose:
+      - "8001"
+
+  complaint-service:
+    build:
+      context: ./backend/complaint-service
+    environment:
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+    depends_on:
+      - mongo
+    expose:
+      - "8002"
+
+  analytics-service:
+    build:
+      context: ./backend/analytics-service
+    environment:
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
+    depends_on:
+      - mongo
+    expose:
+      - "8003"
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      COMPLAINT_SERVICE_URL: http://complaint-service:8002
+      ANALYTICS_SERVICE_URL: http://analytics-service:8003
+      JWT_SECRET: ${JWT_SECRET:-smart-campus-change-this-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:5173}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - complaint-service
+      - analytics-service
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  mongo-data:

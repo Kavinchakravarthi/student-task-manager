@@ -1,0 +1,7 @@
+node_modules/
+dist/
+__pycache__/
+.venv/
+.local-logs/
+.local-processes.json
+.env
